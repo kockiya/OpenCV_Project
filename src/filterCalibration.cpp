@@ -28,7 +28,7 @@ int main() {
 	vector<filteredObject> objects;
 	filteredObject* selected_object;
 	namedWindow("mask", 1); namedWindow("cam", 1); namedWindow("sliders",1);
-	
+	int debugcounter = 0;
 	if(restoreSettings(objects))
 		cout << "'config.json' found; filter settings loaded successfully!" << endl;
 	else
@@ -47,34 +47,23 @@ int main() {
 		selected_object = &objects[objects.size()-1];
 		
 		create_sliders(selected_object);
-		
+
 		while(true)
 		{
-		
+			//Note: Keycodes are platform dependent.
+			//keycodes on Ubuntu on Axiom start with 1048 
+			keycode = waitKey(20);
+			if(keycode == 27 || keycode == 1048603)
+				break;
 			for(int i = 0; i < objects.size(); i++)
 			{
-			/*
-				//Convert camera frame from RBG to HSV (hue, saturation value/brightness);
-				cvtColor(cameraFrame, hsvFrame, CV_BGR2HSV);
-				
-				//Turn the HSV frame into a binary mask based on lower/uper bound HSV limits.
-				inRange(hsvFrame, objects[i].lower, objects[i].upper, maskFrame);
-			
-				//Get rid of "specs" and small noise; size to get rid of is specified by the ekernel size;
-				erode(maskFrame, maskErode, objects[i].ekernel);
-			
-				//Enlarge current points by a size specified by dkernel
-				dilate(maskErode, objects[i].mask, objects[i].dkernel);
-				
-				//Show the filter currently being configured on the "mask" window
-				
-				*/
 				
 				configureMasks(cameraFrame, hsvFrame, maskFrame, maskErode, objects, i);
 				if(selected_object == &objects[i]) 
 					imshow("mask", selected_object->mask);
 				
-				keycode = waitKey(20);
+				if(keycode == 27 || keycode == 1048603)
+					break;
 				
 				//Finds all contours (edges/outlines) from the mask, saves to contours/hierarchy vectors
 				//Draws on camera.
@@ -89,9 +78,9 @@ int main() {
 			cam.read(cameraFrame);
 		
 			//27 = ESC, 115 = 'S'
-			if(keycode == 27)
+			if(keycode == 27 || keycode == 1048603)
 				break;
-			else if(keycode == 115)
+			else if(keycode == 115 || keycode == 1048691)
 			{
 				saveSettings(objects);
 				
@@ -102,6 +91,10 @@ int main() {
 				create_sliders(selected_object);
 				
 			}
+			//debugcounter++;
+			//cout << "Debug Counter: " << debugcounter  << " Keycode: " << keycode << endl;
+			if(debugcounter > 500)
+				break;
 		}
 		
 	}
