@@ -23,7 +23,10 @@ void changeKernel(int i, void* v);
 
 int main() {
 	VideoCapture cam(0);
-	int keycode, counter = 0; 
+	int keycode, counter = 0;
+	string filename = "movedata.txt", data_buffer = "";
+	bool output_data = false;
+	ofstream out;
 	Mat cameraFrame, hsvFrame, maskFrame, maskErode;
 	vector<filteredObject> objects;
 	filteredObject* selected_object;
@@ -38,6 +41,7 @@ int main() {
 	if (cam.isOpened()) { 
 		cout << "Camera opened successfully, hold ESC to close." << endl;
 		cout << " -- Press S to save current filter to file and to configure new filter" << endl;
+		cout << " -- Press W to toggle saving data to file" << endl;
 		cam.read(cameraFrame);
 		imshow("cam", cameraFrame);
 
@@ -70,6 +74,19 @@ int main() {
 				
 				updateFilteredObjectPosition(cam, objects, i);
 				drawFilteredObject(cam, objects, cameraFrame, i);
+				
+				if(objects[i].can_track)
+				{
+					data_buffer += "time " + to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
+					counter++;
+					if(counter >= 500)
+					{
+						out << data_buffer;
+						data_buffer = "";
+						counter = 0;
+					}
+				}
+				
 			
 			}
 			
@@ -91,10 +108,38 @@ int main() {
 				create_sliders(selected_object);
 				
 			}
-			//debugcounter++;
-			//cout << "Debug Counter: " << debugcounter  << " Keycode: " << keycode << endl;
+			else if(keycode == 1048695)
+			{
+				output_data = !output_data;
+				if(output_data){
+				putText(cameraFrame, "(Go back to the console to enter the new filename)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 255, 0));
+				imshow("cam", cameraFrame);
+				cout << "Enter the new filename that will contain the data: ";
+				cin >> filename;
+				cout << endl;
+				
+				out.open(filename, ofstream::ate);
+				}
+				else
+				{
+					if(out.is_open())
+					{
+						if(counter > 0)
+							out << data_buffer;
+						counter = 0;
+						data_buffer = "";
+						out.close();
+					}
+				}
+				
+			}
+			
+			/*
+			debugcounter++;
+			cout << "Debug Counter: " << debugcounter  << " Keycode: " << keycode << endl;
 			if(debugcounter > 500)
 				break;
+			*/
 		}
 		
 	}
@@ -103,6 +148,14 @@ int main() {
 		cout << "Could not open the camera! " << endl;
 	}
 	
+	if(out.is_open())
+	{
+		if(counter > 0)
+			out << data_buffer;
+		counter = 0;
+		data_buffer = "";
+		out.close();
+	}
 	
 	cout << "(The program  has closed)" << endl;
 	
