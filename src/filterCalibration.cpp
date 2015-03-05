@@ -9,7 +9,8 @@ g++ -std=c++11 -I . -I/usr/local/include/opencv -I/usr/local/include/opencv2 -L/
 #include <unistd.h>
 #include "filteredObject.hpp"
 #include <cmath>
-
+#include <time.h>
+#include <sys/time.h>
 //All credits for JSON related operations go to github.com/danielaparker for their easy-to-use header-only JSON processing library.
 
 
@@ -22,7 +23,18 @@ void create_sliders(filteredObject* &f);
 void changeKernel(int i, void* v);
 
 int main() {
+
+	timeval curTime;
+    	gettimeofday(&curTime, NULL);
+    	int milli = curTime.tv_usec / 1000;
+    	char buffer [80];
+    	char currentTime[84] = "";
+
 	VideoCapture cam(0);
+	struct tm * timer;
+	time_t rawtime;
+	time(&rawtime);
+	timer = localtime(&rawtime);
 	int keycode, counter = 0;
 	string filename = "movedata.txt", data_buffer = "";
 	bool output_data = false;
@@ -77,13 +89,27 @@ int main() {
 				
 				if(objects[i].can_track)
 				{
-					data_buffer += "time " + to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
-					counter++;
-					if(counter >= 500)
+				
+					gettimeofday(&curTime, NULL);
+					milli = curTime.tv_usec / 1000;
+					strftime(buffer, 80, "%Y-%m-%d|%H:%M:%S", localtime(&curTime.tv_sec));
+					sprintf(currentTime, "%s:%d", buffer, milli);
+    
+					//time(&rawtime);
+					//timer = localtime(&rawtime);
+					//data_buffer += (string)asctime(timer) + to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
+					data_buffer = to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
+					//counter++;
+					if(counter >= 0)
 					{
-						out << data_buffer;
-						data_buffer = "";
-						counter = 0;
+						out << left << setw(25) << currentTime << data_buffer;
+						
+						//out << " " << data_buffer;
+						//data_buffer = "";
+						//counter = 0;
+						
+						
+						
 					}
 				}
 				
@@ -111,7 +137,7 @@ int main() {
 			else if(keycode == 1048695)
 			{
 				output_data = !output_data;
-				if(output_data){
+				//if(output_data){
 				putText(cameraFrame, "(Go back to the console to enter the new filename)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 255, 0));
 				imshow("cam", cameraFrame);
 				cout << "Enter the new filename that will contain the data: ";
@@ -119,9 +145,11 @@ int main() {
 				cout << endl;
 				
 				out.open(filename, ofstream::ate);
-				}
+				//}
+				/*
 				else
 				{
+				
 					if(out.is_open())
 					{
 						if(counter > 0)
@@ -131,7 +159,7 @@ int main() {
 						out.close();
 					}
 				}
-				
+				*/
 			}
 			
 			/*
