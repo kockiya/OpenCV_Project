@@ -38,14 +38,19 @@ int main() {
 	int keycode, counter = 0;
 	string filename = "movedata.txt", data_buffer = "";
 	bool output_data = false;
+	bool config_loaded = false;
 	ofstream out;
 	Mat cameraFrame, hsvFrame, maskFrame, maskErode;
 	vector<filteredObject> objects;
 	filteredObject* selected_object;
 	namedWindow("mask", 1); namedWindow("cam", 1); namedWindow("sliders",1);
 	int debugcounter = 0;
+	float scale = 1;
 	if(restoreSettings(objects))
+	{
 		cout << "'config.json' found; filter settings loaded successfully!" << endl;
+		config_loaded = true;	
+	}
 	else
 		cout << "'config.json' either not found or improperly formatted. Create new filters." << endl;
 	
@@ -54,6 +59,7 @@ int main() {
 		cout << "Camera opened successfully, hold ESC to close." << endl;
 		cout << " -- Press S to save current filter to file and to configure new filter" << endl;
 		cout << " -- Press W to toggle saving data to file" << endl;
+		cout << " -- Press X to change coordinate scale" << endl;
 		cam.read(cameraFrame);
 		imshow("cam", cameraFrame);
 
@@ -82,7 +88,7 @@ int main() {
 					break;
 				
 				//Finds all contours (edges/outlines) from the mask, saves to contours/hierarchy vectors
-				//Draws on camera.
+				//Draws on camera frame.
 				
 				updateFilteredObjectPosition(cam, objects, i);
 				drawFilteredObject(cam, objects, cameraFrame, i);
@@ -95,21 +101,12 @@ int main() {
 					strftime(buffer, 80, "%Y-%m-%d|%H:%M:%S", localtime(&curTime.tv_sec));
 					sprintf(currentTime, "%s:%d", buffer, milli);
     
-					//time(&rawtime);
-					//timer = localtime(&rawtime);
-					//data_buffer += (string)asctime(timer) + to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
-					data_buffer = to_string(objects[i].x) + " " + to_string(objects[i].x) + "\n";
-					//counter++;
+					data_buffer = to_string(objects[i].x*objects[i].scale) + " " + to_string(objects[i].x*objects[i].scale) + "\n";
+
 					if(counter >= 0)
 					{
-						out << left << setw(25) << currentTime << data_buffer;
-						
-						//out << " " << data_buffer;
-						//data_buffer = "";
-						//counter = 0;
-						
-						
-						
+						out << left << setw(25) << currentTime << data_buffer; 
+		
 					}
 				}
 				
@@ -138,8 +135,10 @@ int main() {
 			{
 				output_data = !output_data;
 				//if(output_data){
-				putText(cameraFrame, "(Go back to the console to enter the new filename)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 255, 0));
+				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
 				imshow("cam", cameraFrame);
+				waitKey(20);
 				cout << "Enter the new filename that will contain the data: ";
 				cin >> filename;
 				cout << endl;
@@ -161,13 +160,42 @@ int main() {
 				}
 				*/
 			}
+			else if(keycode == 1048696) //"X" on Axiom.
+			{
+				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+				imshow("cam", cameraFrame);
+				waitKey(20);
+				string choice = "";
+				cout << "\n\nIn order to change coordinate scale, you need to configure the mask which will \n\tact as reference object. Make sure the current filter has \n\tbeen calibrated with the sliders for a clear white-on-black image." << endl;
+				cout << "You are about to change the coordinate scale, continue? (y/n): ";
+				cin >> choice;
+				if(choice == "y" || choice == "Y")
+				{
+					float real_diameter = 0;
+					cout << "\nWhat is the real diameter of the **currently masked** object?:";
+					cin >> real_diameter;
+					scale = real_diameter/(selected_object->radius*2);
+					changeScale(objects, scale);
+					cout << "\nThe new scale is has been set! Save the new scale to file? (y/n): ";
+					string choice2 = "";
+					cin >> choice2;
+					if(choice2 == "y" || choice2 == "Y")
+					{
+						saveSettings(objects, true);
+					}
+					cout << "\n";
+				}
+				
+			}
 			
 			/*
 			debugcounter++;
 			cout << "Debug Counter: " << debugcounter  << " Keycode: " << keycode << endl;
 			if(debugcounter > 500)
 				break;
-			*/
+				*/
+			
 		}
 		
 	}

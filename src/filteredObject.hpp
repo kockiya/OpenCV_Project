@@ -25,6 +25,8 @@ class filteredObject{
 	int x, y, ekernel_val, dkernel_val;
 	bool can_track;
 	double area;
+	float radius;
+	float scale;
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
 	
@@ -37,6 +39,7 @@ class filteredObject{
 		ekernel.setTo(Scalar(1));
 		dkernel.setTo(Scalar(1));
 		ekernel_val = dkernel_val = 1;
+		scale = 1;
 		can_track = false;
 	}
 	
@@ -57,12 +60,23 @@ class filteredObject{
 	
 };
 
-void saveSettings(vector<filteredObject> f)
+void changeScale(vector<filteredObject> &f, float newScale)
+//Changes the pixel scale to provided scale.
+{
+	for(int i = 0; i < f.size(); i++)
+	{
+		f[i].scale = newScale;
+	}
+}
+
+
+void saveSettings(vector<filteredObject> f, bool excludeSelected=false)
+//If excludeSelected == true, the mask currently being calibrated will not be saved to the config.json.
 {
 	json file_export;
 	json* entry = new json[f.size()];
 	
-	for(int i = 0; i < f.size(); i++)
+	for(int i = 0; i < f.size()-(int)excludeSelected; i++)
 	{
 		if(f[i].name == "object")
 			f[i].name = "object"+to_string(i);
@@ -75,6 +89,7 @@ void saveSettings(vector<filteredObject> f)
 		entry[i]["valLow"] = f[i].lower[2];
 		entry[i]["ekernel"] = f[i].ekernel_val;
 		entry[i]["dkernel"] = f[i].dkernel_val;
+		entry[i]["scale"] = to_string(f[i].scale);
 		
 		file_export[f[i].name] = entry[i];
 	}
@@ -89,6 +104,7 @@ void saveSettings(vector<filteredObject> f)
 }
 
 bool restoreSettings(vector<filteredObject> &objects)
+//Populates vector with config.json data
 {
 
 	bool config_exists = false;
@@ -117,6 +133,7 @@ bool restoreSettings(vector<filteredObject> &objects)
 			f.lower[2] = entry["valLow"].as<int>();
 			f.ekernel_val = entry["ekernel"].as<int>();
 			f.dkernel_val = entry["dkernel"].as<int>();
+			f.scale = stof(entry["scale"].as<string>());
 		
 			objects.push_back(f);
 
@@ -243,18 +260,19 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 	if(objects[i].can_track)
 					{
 						//Draw a circle if the found largest contour is big enough (can_track);
-						int radius = (int)sqrt(objects[i].area/3.14);
+						objects[i].radius = sqrt(objects[i].area/3.14);
+						int r = (int)objects[i].radius;
 						const int xshift = 10, yshift = 10, center_size = 4;
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), radius , Scalar(0, 255, 0), 2);
+						circle(cameraFrame, Point(objects[i].x, objects[i].y), r , Scalar(0, 255, 0), 2);
 						circle(cameraFrame, Point(objects[i].x, objects[i].y), center_size, Scalar(0, 255, 0), -1);
-						radius += 10;
+						r += 10;
 						
-						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+radius), Scalar(0, 255, 0)); 
+						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+r), Scalar(0, 255, 0)); 
 						
 						
-						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "X: "+to_string(objects[i].x) , Point(objects[i].x+xshift, objects[i].y+yshift+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "Y: "+to_string(objects[i].y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, "X: "+to_string((objects[i].x)*objects[i].scale) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, "Y: "+to_string((cameraFrame.size().height-objects[i].y)*objects[i].scale) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
 						
 					}
 		}
@@ -262,18 +280,19 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 		{
 			for(int i = 0; i < objects.size(); i++)
 			{
-						int radius = (int)sqrt(objects[i].area/3.14);
+						objects[i].radius = sqrt(objects[i].area/3.14);
+						int r = (int)objects[i].radius;
 						const int xshift = 10, yshift = 10, center_size = 4;
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), radius , Scalar(0, 255, 0), 2);
+						circle(cameraFrame, Point(objects[i].x, objects[i].y), r , Scalar(0, 255, 0), 2);
 						circle(cameraFrame, Point(objects[i].x, objects[i].y), center_size, Scalar(0, 255, 0), -1);
-						radius += 10;
+						r += 10;
 						
-						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+radius), Scalar(0, 255, 0)); 
+						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+r), Scalar(0, 255, 0)); 
 						
 						
-						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "X: "+to_string(objects[i].x) , Point(objects[i].x+xshift, objects[i].y+yshift+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "Y: "+to_string(objects[i].y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+radius), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, "X: "+to_string(objects[i].x) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+						putText(cameraFrame, "Y: "+to_string(objects[i].y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
 						
 					
 			}
