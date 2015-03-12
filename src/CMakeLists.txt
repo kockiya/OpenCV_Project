@@ -10,7 +10,7 @@ find_package(OpenCV)
 
 
 ## Declare ROS messages and services
-add_message_files(FILES objects.msg)
+add_message_files(FILES fObject.msg fObjectArray.msg)
 ##add_service_files(FILES AddTwoInts.srv)
 
 ## Generate added messages and services
