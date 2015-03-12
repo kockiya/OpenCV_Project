@@ -1,6 +1,8 @@
 #include "ros/ros.h"
 #include "filteredObject.hpp"
 #include "std_msgs/String.h"
+#include "opencv_coordinate_package/fObject.h"
+#include "opencv_coordinate_package/fObjectArray.h"
 
 using namespace std;
 using namespace cv;
@@ -8,57 +10,25 @@ using namespace cv;
 /**
  * This tutorial demonstrates simple receipt of messages over the ROS system.
  */
-void chatterCallback(const std_msgs::String::ConstPtr& s)
+void chatterCallback(const opencv_coordinate_package::fObjectArray::ConstPtr& o)
 {
-
-	ROS_INFO("Subscriber see's: %s",s->data.c_str());
-	/*for(int i = 0; i < objects.size(); i++)
-	{
-		if(objects[i].can_track())
-		{
-  			ROS_INFO("%s: - X: %s Y: %s",objects[i].name, to_string(objects[i].name);
-  		}
-  	}
-  	*/
+	//Need to look into getting argv[1] so that the object 'ID' can be specified so
+	//subscribers only pay attention to o.objects[ID]
+	
+	string s = "name: " + o->objects[0].name + " X: " + to_string(o->objects[0].x) + " Y: " + to_string(o->objects[0].y);
+	ROS_INFO("Subscriber see's object0: %s",s.c_str());
+	
 }
 
 int main(int argc, char **argv)
 {
-  /**
-   * The ros::init() function needs to see argc and argv so that it can perform
-   * any ROS arguments and name remapping that were provided at the command line. For programmatic
-   * remappings you can use a different version of init() which takes remappings
-   * directly, but for most command-line programs, passing argc and argv is the easiest
-   * way to do it.  The third argument to init() is the name of the node.
-   *
-   * You must call one of the versions of ros::init() before using any other
-   * part of the ROS system.
-   */
-  ros::init(argc, argv, "listener");
 
-  /**
-   * NodeHandle is the main access point to communications with the ROS system.
-   * The first NodeHandle constructed will fully initialize this node, and the last
-   * NodeHandle destructed will close down the node.
-   */
+  ros::init(argc, argv, "listener"); //'listener' = name of this node
   ros::NodeHandle n;
 
-  /**
-   * The subscribe() call is how you tell ROS that you want to receive messages
-   * on a given topic.  This invokes a call to the ROS
-   * master node, which keeps a registry of who is publishing and who
-   * is subscribing.  Messages are passed to a callback function, here
-   * called chatterCallback.  subscribe() returns a Subscriber object that you
-   * must hold on to until you want to unsubscribe.  When all copies of the Subscriber
-   * object go out of scope, this callback will automatically be unsubscribed from
-   * this topic.
-   *
-   * The second parameter to the subscribe() function is the size of the message
-   * queue.  If messages are arriving faster than they are being processed, this
-   * is the number of messages that will be buffered up before beginning to throw
-   * away the oldest ones.
-   */
-  ros::Subscriber sub = n.subscribe("camCoords", 1000, chatterCallback);
+  //'camCoords' = name of the topic to subscribe
+  //chatterCallback = name of function to call
+  ros::Subscriber sub = n.subscribe("camCoords", 1000, chatterCallback); 
 
   /**
    * ros::spin() will enter a loop, pumping callbacks.  With this version, all

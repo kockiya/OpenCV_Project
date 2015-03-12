@@ -1,5 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "opencv_coordinate_package/fObject.h"
+#include "opencv_coordinate_package/fObjectArray.h"
 #include "filteredObject.hpp"
 #include <sstream>
 
@@ -16,10 +18,10 @@ int main(int argc, char**argv)
 
 	ros::NodeHandle n;
 
-
-	ros::Publisher coord_pub = n.advertise<std_msgs::String>("camCoords", 1000);
+	//advertise<type_of_msg_to_return>
+	ros::Publisher coord_pub = n.advertise<opencv_coordinate_package::fObjectArray>("camCoords", 1000);
 	
-	ros::Rate loop_rate(10);
+	ros::Rate loop_rate(20);
 	
 	
 	
@@ -39,10 +41,24 @@ int main(int argc, char**argv)
     	
     
     
-    std_msgs::String msg;
+    //std_msgs::String msg;
     
+    opencv_coordinate_package::fObjectArray msg;
     cam.read(cameraFrame);
-    	
+    
+
+    for(int i = 0; i < objects.size(); i++)
+    //Initialize message array to correspond with filteredObject vector.
+    {
+    	opencv_coordinate_package::fObject f;
+    	f.name = objects[i].name;
+    	f.x = objects[i].x*objects[i].scale;
+    	f.y = objects[i].y*objects[i].scale;
+    	msg.objects.push_back(f);
+    }
+    
+    bool atleastOneTracked = false;
+    bool show_once = true;
   while (ros::ok())
   {
 
@@ -58,26 +74,36 @@ int main(int argc, char**argv)
 		
 		if(objects[i].can_track)
 		{
-			string s =  "Publisher writes: " + objects[i].name + " - X:" + to_string(objects[i].x) + " Y:" + to_string(objects[i].y);
-			msg.data = s;
-			ROS_INFO("%s", s.c_str());
-			coord_pub.publish(msg);
+			atleastOneTracked = true;
+			//TODO: Add can_track to fObject.msg 
+			msg.objects[i].x = objects[i].x*objects[i].scale;
+			msg.objects[i].y = objects[i].y*objects[i].scale;
+			string z = "name: " + msg.objects[i].name + " X: " + to_string(msg.objects[i].x) + " Y: " + to_string(msg.objects[i].y);
+			ROS_INFO("%s", z.c_str());
+			
 		}
 		
 	}
 	//if(show_camera)
 	
+	if(atleastOneTracked)
+	//Publishes information about all nodes if atleast one object was being tracked.
+	{
+		coord_pub.publish(msg);
+		atleastOneTracked = false;
+		
+		
+		string s = "This node (coordPub) is publishing coordinate info to topic 'camCoord'.";
+		
+		if(show_once)
+			ROS_INFO("%s", s.c_str());
+		show_once = show_once ? !show_once : show_once;
+	}
+	
 	imshow("cam", cameraFrame);
 	cam.read(cameraFrame);
 	
 	
-
-    /**
-     * The publish() function is how you send messages. The parameter
-     * is the message object. The type of this object must agree with the type
-     * given as a template parameter to the advertise<>() call, as was done
-     * in the constructor above.
-     */
     
 
     ros::spinOnce();
