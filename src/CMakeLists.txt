@@ -32,3 +32,11 @@ add_dependencies(talker beginner_tutorials_generate_messages_cpp)
 add_executable(listener coord_subscriber.cpp)
 target_link_libraries(listener ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(listener beginner_tutorials_generate_messages_cpp)
+
+add_executable(vtalker velo_subpub.cpp)
+target_link_libraries(vtalker ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(vtalker beginner_tutorials_generate_messages_cpp)
+
+add_executable(vlistener velo_testsub.cpp)
+target_link_libraries(vlistener ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(vlistener beginner_tutorials_generate_messages_cpp)

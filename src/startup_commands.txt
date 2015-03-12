@@ -1,0 +1,25 @@
+I always seem to forget the ROS commands. Never again.
+
+roscore
+	-Used to start the ROS service. 
+	-Must be ran before interacting on ROS network and before using ROS publisher/subscribers.
+	-Will run in it's own terminal window throughout the duration of the ROS session
+
+source devel/setup.bash
+	-Used to locate the ROS package that contains various nodes.
+	-Must be run before using rosrun.
+
+rosrun (name of package) (name of node)
+rosrun opencv_coordinate_package [listener | vlistener | talker | vtalker]
+	-Starts the ROS node given the node name and the node package.
+	-Each node runs it's own terminal.
+	-This is the name found in CMakelists.
+
+catkin_make
+	-Used to compile ROS package.
+	-Runs in the parent directory which contains the src and devel folders.
+
+
+
+	
+
