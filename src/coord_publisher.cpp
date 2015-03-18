@@ -46,8 +46,8 @@ int main(int argc, char**argv)
     opencv_coordinate_package::fObjectArray msg;
     cam.read(cameraFrame);
     
-
-    for(int i = 0; i < objects.size(); i++)
+    msg.size = objects.size();
+    for(int i = 0; i < msg.size; i++)
     //Initialize message array to correspond with filteredObject vector.
     {
     	opencv_coordinate_package::fObject f;
@@ -56,6 +56,7 @@ int main(int argc, char**argv)
     	f.y = objects[i].y*objects[i].scale;
     	msg.objects.push_back(f);
     }
+    
     
     bool atleastOneTracked = false;
     bool show_once = true;
@@ -82,6 +83,8 @@ int main(int argc, char**argv)
 			ROS_INFO("%s", z.c_str());
 			
 		}
+		
+		msg.objects[i].can_track = objects[i].can_track;
 		
 	}
 	//if(show_camera)
