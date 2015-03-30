@@ -78,11 +78,12 @@ int main(int argc, char**argv)
 			atleastOneTracked = true;
 			//TODO: Add can_track to fObject.msg 
 			msg.objects[i].x = objects[i].x*objects[i].scale;
-			msg.objects[i].y = objects[i].y*objects[i].scale;
+			msg.objects[i].y = objects[i].adjusted_y*objects[i].scale;
 			string z = "name: " + msg.objects[i].name + " X: " + to_string(msg.objects[i].x) + " Y: " + to_string(msg.objects[i].y);
 			ROS_INFO("%s", z.c_str());
 			
 		}
+
 		
 		msg.objects[i].can_track = objects[i].can_track;
 		
