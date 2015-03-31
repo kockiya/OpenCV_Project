@@ -22,7 +22,7 @@ class filteredObject{
 	Mat dkernel;
 	Mat mask;
 	Moments moment;
-	int x, y, ekernel_val, dkernel_val;
+	int x, y, adjusted_y, adjusted_x, ekernel_val, dkernel_val;
 	bool can_track;
 	double area;
 	float radius;
@@ -45,16 +45,6 @@ class filteredObject{
 	
 	void setName(string s){
 		name = s;
-	}
-	
-	//For debugging purposes; not needed normally as sliders modify member values directly.
-	void setValues(int lh, int ls, int lv, int uh, int us, int uv, int d, int e){
-	lower[0] = lh; lower[1] = ls; lower[2] = lv;
-	upper[0] = uh; upper[1] = us; upper[2] = uv;
-	dkernel.create(d, d, CV_8UC1);
-	ekernel.create(e, e, CV_8UC1);
-	ekernel.setTo(Scalar(1));
-	dkernel.setTo(Scalar(1));
 	}
 	
 	
@@ -107,6 +97,7 @@ bool restoreSettings(vector<filteredObject> &objects)
 //Populates vector with config.json data
 {
 
+	//Check if config.json exists in working directory
 	bool config_exists = false;
 	ifstream fin("config.json");
 	if(fin)
@@ -114,7 +105,8 @@ bool restoreSettings(vector<filteredObject> &objects)
 		config_exists = true;
 		fin.close();
 	}
-		
+	
+	//If it exists, populate vector elements with json data
 	if(config_exists)
 	{
 
@@ -143,36 +135,28 @@ bool restoreSettings(vector<filteredObject> &objects)
 	return false;
 }
 
-//Most of these functions could look prettier if they were recursive, but I'm too
-//lazy and want something that just works for now. For the most part, if i or z
-//is negative (by default) then these functions apply to all objects in the 
-//vector ... otherwise it applies to only the specified index.
 
 
-void configureMasks(Mat &cameraFrame, Mat &hsvFrame, Mat &maskFrame, Mat &maskErode, vector<filteredObject> &objects, int i=-1)
+bool configureMasks(Mat &cameraFrame, Mat &hsvFrame, Mat &maskFrame, Mat &maskErode, vector<filteredObject> &objects, int z=-1)
 {
-	if(i <= -1)
-	{
-		for(int k = 0; k < objects.size(); k++)
-		{
-		//Convert camera frame from RBG to HSV (hue, saturation value/brightness);
-		cvtColor(cameraFrame, hsvFrame, CV_BGR2HSV);
+
+	//Check if option parameter is valid.
+	if(z >= objects.size())
+		return false;
+		
+	//If z < 0, then draw all filtered objects. Otherwise only draw the selected one matching the index.
+	//p starts at 0 if drawing all filtered objects; starts at z if drawing only z;
+	//q is the size of the vector if drawwing all objects; is z+1 if drawing only z;
+	int p = z < 0 ? 0 : z;
+	int q = z < 0 ? objects.size() : z+1;
 	
-		//Turn the HSV frame into a binary mask based on lower/uper bound HSV limits.
-		inRange(hsvFrame, objects[i].lower, objects[i].upper, maskFrame);
+	
 
-		//Get rid of "specs" and small noise; size to get rid of is specified by the ekernel size;
-		erode(maskFrame, maskErode, objects[i].ekernel);
-
-		//Enlarge current points by a size specified by dkernel
-		dilate(maskErode, objects[i].mask, objects[i].dkernel);
-		}
-	}
-	else
+	for(int i = p; i < q; i++)
 	{
 		//Convert camera frame from RBG to HSV (hue, saturation value/brightness);
 		cvtColor(cameraFrame, hsvFrame, CV_BGR2HSV);
-	
+
 		//Turn the HSV frame into a binary mask based on lower/uper bound HSV limits.
 		inRange(hsvFrame, objects[i].lower, objects[i].upper, maskFrame);
 
@@ -182,6 +166,7 @@ void configureMasks(Mat &cameraFrame, Mat &hsvFrame, Mat &maskFrame, Mat &maskEr
 		//Enlarge current points by a size specified by dkernel
 		dilate(maskErode, objects[i].mask, objects[i].dkernel);
 	}
+	return true;
 	
 }
 
@@ -190,114 +175,96 @@ bool updateFilteredObjectPosition(VideoCapture &cam, vector<filteredObject> &obj
 	if(!cam.isOpened())
 		return false;
 		
+	//Check if option parameter is valid.
+	if(z >= objects.size())
+		return false;
 	
-				
-	if(z > -1)
-	{
-	int i = z;
-		
-findContours(objects[i].mask, objects[i].contours, objects[i].hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-				if(objects[i].hierarchy.size() > 0 && objects[i].contours.size() > 0){
-					for(int j = 0; j >= 0; j = objects[i].hierarchy[j][0]){
-					//Credits for finding x, y, moments and area goes to youtube.com/khounslow as I do 
-					//not understand what image moments are (computer vision related concept).
-							objects[i].moment = moments((Mat)objects[i].contours[j]);
-							objects[i].area = objects[i].moment.m00;
-					
-							if(objects[i].area > 400)
-							{
-								objects[i].x = objects[i].moment.m10/objects[i].area;
-								objects[i].y = objects[i].moment.m01/objects[i].area;
-								objects[i].can_track = true;
-							}
-							else
-								objects[i].can_track = false;
-						}
-					}
-					else
-						objects[i].can_track = false;
-					
-	}
-	else
-	{
-	for(int i = 0; i < objects.size(); i++)
+	//If z < 0, then draw all filtered objects. Otherwise only draw the selected one matching the index.
+	//p starts at 0 if drawing all filtered objects; starts at z if drawing only z;
+	//q is the size of the vector if drawwing all objects; is z+1 if drawing only z;
+	int p = z < 0 ? 0 : z;
+	int q = z < 0 ? objects.size() : z+1;
+	
+	for(int i = p; i < q; i++)
 	{
 		findContours(objects[i].mask, objects[i].contours, objects[i].hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-				if(objects[i].hierarchy.size() > 0 && objects[i].contours.size() > 0){
-					for(int j = 0; j >= 0; j = objects[i].hierarchy[j][0]){
+				if(objects[i].hierarchy.size() > 0 && objects[i].contours.size() > 0)
+				{
+					for(int j = 0; j >= 0; j = objects[i].hierarchy[j][0])
+					{
 					//Credits for finding x, y, moments and area goes to youtube.com/khounslow as I do 
 					//not understand what image moments are (computer vision related concept).
 							objects[i].moment = moments((Mat)objects[i].contours[j]);
 							objects[i].area = objects[i].moment.m00;
 					
-							if(objects[i].area > 400)
+							if(objects[i].area > 100)
 							{
 								objects[i].x = objects[i].moment.m10/objects[i].area;
 								objects[i].y = objects[i].moment.m01/objects[i].area;
+								objects[i].adjusted_y = objects[i].mask.size().height - objects[i].moment.m01/objects[i].area;
+								objects[i].adjusted_y *= objects[i].scale;
+								objects[i].adjusted_x = objects[i].x * objects[i].scale;
 								objects[i].can_track = true;
 							}
 							else
 								objects[i].can_track = false;
-						}
 					}
-					else
-						objects[i].can_track = false;
-		}
+				}
+				else
+					objects[i].can_track = false;
+	}
 	
-	}	
-					return true;
+		
+		return true;
 }
 
 bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat &cameraFrame, int z = -1)
 {
+	
+	//Check if camera is opened
 	if(!cam.isOpened())
 		return false;
 	
-	if(z > -1)
-	{
-	int i = z;
+	//Check if option parameter is valid.
+	if(z >= objects.size())
+		return false;
 	
-	if(objects[i].can_track)
-					{
-						//Draw a circle if the found largest contour is big enough (can_track);
-						objects[i].radius = sqrt(objects[i].area/3.14);
-						int r = (int)objects[i].radius;
-						const int xshift = 10, yshift = 10, center_size = 4;
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), r , Scalar(0, 255, 0), 2);
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), center_size, Scalar(0, 255, 0), -1);
-						r += 10;
-						
-						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+r), Scalar(0, 255, 0)); 
-						
-						
-						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "X: "+to_string((objects[i].x)*objects[i].scale) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "Y: "+to_string((cameraFrame.size().height-objects[i].y)*objects[i].scale) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						
-					}
-		}
-		else
+	//If z < 0, then draw all filtered objects. Otherwise only draw the selected one matching the index.
+	//p starts at 0 if drawing all filtered objects; starts at z if drawing only z;
+	//q is the size of the vector if drawwing all objects; is z+1 if drawing only z;
+	int p = z < 0 ? 0 : z;
+	int q = z < 0 ? objects.size() : z+1;
+	
+	
+	for(int i = p; i < q; i++)
+	{
+		if(objects[i].can_track)
 		{
-			for(int i = 0; i < objects.size(); i++)
-			{
-						objects[i].radius = sqrt(objects[i].area/3.14);
-						int r = (int)objects[i].radius;
-						const int xshift = 10, yshift = 10, center_size = 4;
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), r , Scalar(0, 255, 0), 2);
-						circle(cameraFrame, Point(objects[i].x, objects[i].y), center_size, Scalar(0, 255, 0), -1);
-						r += 10;
-						
-						line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+r), Scalar(0, 255, 0)); 
-						
-						
-						putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "X: "+to_string(objects[i].x) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						putText(cameraFrame, "Y: "+to_string(objects[i].y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-						
-					
-			}
-		
+			//Credits for finding x, y, moments and area goes to youtube.com/khounslow as I do 
+			//not understand what image moments are (computer vision related concept).
+			objects[i].radius = sqrt(objects[i].area/3.14);
+			int r = (int)objects[i].radius;
+			const int xshift = 10, yshift = 10, center_size = 4;
+			
+			//Circle surrounding filtered object
+			circle(cameraFrame, Point(objects[i].x, objects[i].y), r , Scalar(0, 255, 0), 2);
+			
+			//Point marking cente of filter object
+			circle(cameraFrame, Point(objects[i].x, objects[i].y), center_size, Scalar(0, 255, 0), -1);
+			
+			r += 10; //Let r be the length of a new line segment that starts from center of circle and goes a bit out of the circle.
+			line(cameraFrame, Point(objects[i].x, objects[i].y), Point(objects[i].x+xshift, objects[i].y+r), Scalar(0, 255, 0)); 
+	
+			//Text
+			putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+			putText(cameraFrame, "X: "+to_string(objects[i].adjusted_x) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+			putText(cameraFrame, "Y: "+to_string(objects[i].adjusted_y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
 		}
+							
+	}
+		
+
+		
 
 	return true;
 
