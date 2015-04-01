@@ -93,7 +93,7 @@ int main() {
 				updateFilteredObjectPosition(cam, objects, i);
 				drawFilteredObject(cam, objects, cameraFrame, i);
 				
-				if(objects[i].can_track)
+				if(objects[i].can_track && output_data)
 				{
 				
 					gettimeofday(&curTime, NULL);

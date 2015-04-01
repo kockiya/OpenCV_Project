@@ -270,5 +270,20 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 
 }
 
+//Credits to stackoverflow Evan.Teran
+vector<string> &split_str(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+vector<string> split_str(const string &s, char delim) {
+    vector<string> elems;
+    split_str(s, delim, elems);
+    return elems;
+}
 
 #endif
