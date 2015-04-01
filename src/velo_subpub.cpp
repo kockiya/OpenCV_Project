@@ -14,6 +14,7 @@ Publisher to cmd_vel
 */
 
 #include "ros/ros.h"
+#include <geometry_msgs/Twist.h>
 #include "std_msgs/String.h"
 #include "filteredObject.hpp"
 #include <sstream>
@@ -33,6 +34,94 @@ int NodeNumber;
 float this_x;
 float this_y;
 
+
+class RobotDriver
+//Adapted code example
+{
+private:
+  //! The node handle we'll be using
+  ros::NodeHandle nh_;
+  //! We will be publishing to the "/base_controller/command" topic to issue commands
+  ros::Publisher cmd_vel_pub_;
+
+public:
+  //! ROS node initialization
+  RobotDriver(ros::NodeHandle &nh)
+  {
+    nh_ = nh;
+    //set up the publisher for the cmd_vel topic
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+  }
+
+  void moveDistance(float distance, float speed, geometry_msgs::Twist t)
+  //Move a certain distance in meters using time.
+  {
+  	timeval start;
+  	timeval end;
+    	gettimeofday(&end, NULL);
+    	gettimeofday(&start, NULL);
+    	int startTime = start.tv_usec / 1000;
+    	int endTime = end.tv_usec / 1000;
+    	
+    	
+	//v = d/t -> t = d/v
+	int totalTime = (distance/speed)*1000;
+	
+	cmd_vel_pub_.publish(t);
+	
+	while((startTime - endTime) < totalTime)
+	{
+		gettimeofday(&end, NULL);
+		endTime = end.tv_usec / 1000;
+	}
+	
+	geometry_msgs::Twist stop_t;
+	cmd_vel_pub_.publish(stop_t);
+  }
+  
+  //! Loop forever while sending drive commands based on keyboard input
+  bool driveInput()
+  {
+    cout << "Type in the distance and speed in meters. \n  EX: 0.5 0.1\t\tGoes 0.5 meters at 0.1m/s\n(Maximum 2 meters, 0.3 m/s)";
+
+    //we will be sending commands of type "twist"
+    geometry_msgs::Twist base_cmd;
+
+    string input;
+    while(nh_.ok()){
+
+      
+      getline(cin, input);
+      vector<string> input_val = split_str(input, ' ');
+      float dist, spd;
+      
+      //ros::spinOnce();
+      
+      if(input_val.size() != 2 || stof(input_val[0]) > 2 || stof(input_val[0]) > 0.3)
+      {
+        cout << "ERROR: Invalid command; must give valid distace and speed" << endl;
+        continue;
+      }
+
+      base_cmd.linear.x = base_cmd.linear.y = base_cmd.angular.z = 0;
+      
+      try{
+      dist = stof(input_val[0]);
+      spd = stof(input_val[1]);
+      }
+      catch(...)
+      {
+    	cout << "ERROR: Invalid input values. Must be numbers." << endl;
+      }
+      
+      moveDistance(dist, spd, base_cmd);
+      
+ 
+    }
+    return true;
+  }
+
+};
 
 void chatterCallback(const opencv_coordinate_package::fObjectArray::ConstPtr& o)
 {
@@ -84,7 +173,10 @@ int main(int argc, char**argv)
     	
   while (ros::ok())
   {
+	RobotDriver driver(n);
+	driver.driveInput();
 	
+	/*
 	cout << "Enter the target coordinates:" << endl; 
    	getline(cin, input);
 	vector<string> params = split_str(input, ' ');
@@ -103,6 +195,7 @@ int main(int argc, char**argv)
 	
 	
 	loop_rate.sleep();
+	*/
   }
   
 
@@ -127,20 +220,12 @@ vector<float> calcSpeed(float target_x, float target_y, float k, float start_x, 
 	
 }
 
-vector<string> &split_str(const string &s, char delim, vector<string> &elems) {
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
-}
 
-vector<string> split_str(const string &s, char delim) {
-    vector<string> elems;
-    split_str(s, delim, elems);
-    return elems;
-}
+
+
+
+
+
 
 
 
