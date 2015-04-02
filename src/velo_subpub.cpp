@@ -50,39 +50,45 @@ public:
   {
     nh_ = nh;
     //set up the publisher for the cmd_vel topic
-    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1);
   }
 
   void moveDistance(float distance, float speed, geometry_msgs::Twist t)
-  //Move a certain distance in meters using time.
+  //Move a certain distance foward in meters given distance and speed and then stop.
   {
   	timeval start;
   	timeval end;
     	gettimeofday(&end, NULL);
     	gettimeofday(&start, NULL);
-    	int startTime = start.tv_usec / 1000;
-    	int endTime = end.tv_usec / 1000;
+    	int startTime = concatenate_int(start.tv_sec, start.tv_usec/1000);
+    	int endTime = concatenate_int(end.tv_sec, end.tv_usec/1000);
     	
     	
 	//v = d/t -> t = d/v
 	int totalTime = (distance/speed)*1000;
 	
+	
 	cmd_vel_pub_.publish(t);
 	
-	while((startTime - endTime) < totalTime)
+	while((endTime - startTime) < totalTime)
 	{
-		gettimeofday(&end, NULL);
-		endTime = end.tv_usec / 1000;
+	    gettimeofday(&end, NULL);
+	    endTime = concatenate_int(end.tv_sec, end.tv_usec/1000);
+	    cmd_vel_pub_.publish(t);
+	    
 	}
 	
+	//TODO: Smooth stop instead of abrupt.
 	geometry_msgs::Twist stop_t;
+	stop_t.linear.x = 0;
 	cmd_vel_pub_.publish(stop_t);
   }
   
   //! Loop forever while sending drive commands based on keyboard input
   bool driveInput()
   {
-    cout << "Type in the distance and speed in meters. \n  EX: 0.5 0.1\t\tGoes 0.5 meters at 0.1m/s\n(Maximum 2 meters, 0.3 m/s)";
+    cout << "Type in the distance and speed in meters. \n  EX: 0.5 0.1\t\tGoes 0.5 meters at 0.1m/s\n(Maximum 5 meters, 0.7 m/s)\n";
+
 
     //we will be sending commands of type "twist"
     geometry_msgs::Twist base_cmd;
@@ -90,14 +96,14 @@ public:
     string input;
     while(nh_.ok()){
 
-      
+      cout << "Enter command: ";
       getline(cin, input);
       vector<string> input_val = split_str(input, ' ');
       float dist, spd;
       
       //ros::spinOnce();
       
-      if(input_val.size() != 2 || stof(input_val[0]) > 2 || stof(input_val[0]) > 0.3)
+      if(input_val.size() != 2 || stof(input_val[0]) > 5 || stof(input_val[1]) > 0.7)
       {
         cout << "ERROR: Invalid command; must give valid distace and speed" << endl;
         continue;
@@ -108,6 +114,7 @@ public:
       try{
       dist = stof(input_val[0]);
       spd = stof(input_val[1]);
+      base_cmd.linear.x = spd;
       }
       catch(...)
       {
