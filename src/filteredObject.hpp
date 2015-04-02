@@ -271,19 +271,32 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 }
 
 //Credits to stackoverflow Evan.Teran
-vector<string> &split_str(const string &s, char delim, vector<string> &elems) {
+vector<string> &split_str(const string &s, char delim, vector<string> &elems)
+{
     stringstream ss(s);
     string item;
-    while (getline(ss, item, delim)) {
+    while (getline(ss, item, delim)) 
+    {
         elems.push_back(item);
     }
     return elems;
 }
 
-vector<string> split_str(const string &s, char delim) {
+vector<string> split_str(const string &s, char delim) 
+//Given string and delimiter, return vector containing members of the split string.
+{
     vector<string> elems;
     split_str(s, delim, elems);
     return elems;
+}
+
+//Credits to stackoverflow Mooingduck
+unsigned concatenate_int(unsigned x, unsigned y) {
+//Given integers x and y, return x | y 
+    unsigned pow = 10;
+    while(y >= pow)
+        pow *= 10;
+    return x * pow + y;        
 }
 
 #endif
