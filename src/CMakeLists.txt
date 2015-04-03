@@ -3,14 +3,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} [~/FindOpenCV.cmake])
 project(opencv_coordinate_package)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs genmsg message_generation)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy rosbag std_msgs genmsg message_generation)
 find_package(OpenCV)
 
 
 
 
 ## Declare ROS messages and services
-add_message_files(FILES fObject.msg fObjectArray.msg)
+add_message_files(FILES fObject.msg fObjectArray.msg fStat.msg)
 ##add_service_files(FILES AddTwoInts.srv)
 
 ## Generate added messages and services
@@ -40,3 +40,12 @@ add_dependencies(vtalker beginner_tutorials_generate_messages_cpp)
 add_executable(vlistener velo_testsub.cpp)
 target_link_libraries(vlistener ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(vlistener beginner_tutorials_generate_messages_cpp)
+
+add_executable(filterCalibration filterCalibrationROS.cpp)
+target_link_libraries(filterCalibration ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(filterCalibration beginner_tutorials_generate_messages_cpp)
+
+#add_executable(vsrv velocity_server.cpp)
+#target_link_libraries(vsrv ${catkin_LIBRARIES} ${OpenCV_LIBS})
+#add_dependencies(vsrv beginner_tutorials_generate_messages_cpp)
+
