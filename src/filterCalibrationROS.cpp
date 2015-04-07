@@ -23,34 +23,43 @@ using namespace std;
 //Creates the sliders used for filtering.
 void create_sliders(filteredObject* &f);
 void changeKernel(int i, void* v);
+void clickPointCallBack(int event, int x, int y, int flags, void* userdata);
+
+//TODO:
+//Create feature that uses distance between clicked points to change scaling.
+//Create feature that uses clicked points to change origin.
 
 int main() {
 	rosbag::Bag b;
 	opencv_coordinate_package::fStat pointData;
 	ros::Time::init();
 	
+	
+	
 	timeval curTime;
     	gettimeofday(&curTime, NULL);
     	int milli = curTime.tv_usec / 1000;
     	char buffer [80];
     	char currentTime[84] = "";
-
-	VideoCapture cam(0);
 	struct tm * timer;
 	time_t rawtime;
 	time(&rawtime);
 	timer = localtime(&rawtime);
+	
+	VideoCapture cam(0);
 	int keycode, counter = 0;
 	string filename = "movedata.txt", data_buffer = "";
 	bool output_data = false;
 	bool config_loaded = false;
-	//ofstream out;
 	Mat cameraFrame, hsvFrame, maskFrame, maskErode;
 	vector<filteredObject> objects;
 	filteredObject* selected_object;
 	namedWindow("mask", 1); namedWindow("cam", 1); namedWindow("sliders",1);
-	int debugcounter = 0;
 	float scale = 1;
+	
+	clickData cData;
+	
+	
 	if(restoreSettings(objects))
 	{
 		cout << "'config.json' found; filter settings loaded successfully!" << endl;
@@ -74,6 +83,8 @@ int main() {
 		selected_object = &objects[objects.size()-1];
 		
 		create_sliders(selected_object);
+		
+		setMouseCallback("cam", clickPointCallBack, &cData);
 
 		while(true)
 		{
@@ -97,32 +108,20 @@ int main() {
 				
 				updateFilteredObjectPosition(cam, objects, i);
 				drawFilteredObject(cam, objects, cameraFrame, i);
+				drawClickedPoints(cam, cData, cameraFrame);
 				
 				if(objects[i].can_track && output_data)
 				{
 				
-					gettimeofday(&curTime, NULL);
-					milli = curTime.tv_usec / 1000;
-					strftime(buffer, 80, "%H:%M:%S", localtime(&curTime.tv_sec));
-					//strftime(buffer, 80, "%Y-%m-%d|%H:%M:%S", localtime(&curTime.tv_sec));
-					sprintf(currentTime, "%s:%d", buffer, milli);
 					
-					pointData.time = currentTime;
+					//Bag file should handle timestamp.
+					
 					pointData.id = i;
 					pointData.x = objects[i].adjusted_x;
 					pointData.y = objects[i].adjusted_y;
 					
 					b.write("pointData", ros::Time::now(), pointData);
-					
-    					/*
-					data_buffer = to_string(objects[i].x*objects[i].scale) + " " + to_string(objects[i].x*objects[i].scale) + "\n";
 
-					if(counter >= 0)
-					{
-						out << left << setw(25) << currentTime << data_buffer; 
-		
-					}
-					*/
 				}
 				
 			
@@ -159,7 +158,6 @@ int main() {
 				cin >> filename;
 				cout << endl;
 				
-				//out.open(filename, ofstream::ate);
 				b.open(filename, rosbag::bagmode::Write);
 				}
 				else
@@ -251,6 +249,29 @@ void create_sliders(filteredObject* &selected_object)
 	
 	
 
+}
+
+void clickPointCallBack(int event, int x, int y, int flags, void* userdata)
+{
+//Puts screen coordinates of click information into clickData struct. Limited to
+//storing two coordinates at a time; should alternate between stored points 0 and 1.
+	
+	if(event == EVENT_LBUTTONUP)
+	{
+		clickData* cd = (clickData*)userdata;
+		int clicked_count = cd->clicked_count;
+
+		if(cd->clicked_count <= 1)
+		{
+			cd->x[clicked_count] = x;
+			cd->y[clicked_count] = y;
+			cd->clicked_count++;
+			cd->clicked_count = cd->clicked_count <= 1 ? cd->clicked_count : 0;
+		
+		}
+
+	}
+	
 }
 
 
