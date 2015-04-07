@@ -50,6 +50,22 @@ class filteredObject{
 	
 };
 
+struct clickData
+{
+	int clicked_count;
+	bool can_draw;
+	vector<int> x;
+	vector<int> y;
+
+	clickData()
+	{
+		x = vector<int>(2);
+		y = vector<int>(2);
+		clicked_count = 0;
+	}
+
+};
+	
 void changeScale(vector<filteredObject> &f, float newScale)
 //Changes the pixel scale to provided scale.
 {
@@ -270,7 +286,26 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 
 }
 
-//Credits to stackoverflow Evan.Teran
+void drawClickedPoints(VideoCapture &cam, clickData &cData, Mat &cameraFrame)
+//Given clickData, draws red/blue circles at clicked position cameraFrame given clickData.
+
+{
+	int s = cData.x.size();
+	for(int i = 0; i < s; i++)
+	{
+		if(cData.x[i] > 0 && cData.y[i] > 0) 
+		{
+			if(i % 2 == 0)
+				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 4, Scalar(0, 0, 255), -1);
+			else
+				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 4, Scalar(255, 0, 0), -1);
+		
+		}
+	}
+
+}
+
+//Credits to stackoverflow Evan.Teran for elegant string splitting.
 vector<string> &split_str(const string &s, char delim, vector<string> &elems)
 {
     stringstream ss(s);
@@ -290,7 +325,7 @@ vector<string> split_str(const string &s, char delim)
     return elems;
 }
 
-//Credits to stackoverflow Mooingduck
+//Credits to stackoverflow Mooingduck for efficient int concatenation
 unsigned concatenate_int(unsigned x, unsigned y) {
 //Given integers x and y, return x | y 
     unsigned pow = 10;
