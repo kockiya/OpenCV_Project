@@ -53,7 +53,7 @@ class filteredObject{
 struct clickData
 {
 	int clicked_count;
-	bool can_draw;
+	bool two_clicks;
 	vector<int> x;
 	vector<int> y;
 
@@ -62,7 +62,9 @@ struct clickData
 		x = vector<int>(2);
 		y = vector<int>(2);
 		clicked_count = 0;
+		two_clicks = false;
 	}
+	
 
 };
 	
@@ -296,9 +298,9 @@ void drawClickedPoints(VideoCapture &cam, clickData &cData, Mat &cameraFrame)
 		if(cData.x[i] > 0 && cData.y[i] > 0) 
 		{
 			if(i % 2 == 0)
-				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 4, Scalar(0, 0, 255), -1);
+				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 2, Scalar(0, 0, 255), -1);
 			else
-				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 4, Scalar(255, 0, 0), -1);
+				circle(cameraFrame, Point(cData.x[i], cData.y[i]), 2, Scalar(255, 0, 0), -1);
 		
 		}
 	}
