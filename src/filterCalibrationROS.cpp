@@ -168,22 +168,22 @@ int main() {
 			}
 			else if(keycode == 1048696) //"X" on Axiom.
 			{
-				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
-				putText(cameraFrame, "(The terminal requires your input)" , Point(30, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
-				imshow("cam", cameraFrame);
-				waitKey(20);
-				string choice = "";
-				cout << "\n\nIn order to change coordinate scale, you need to configure the mask which will \n\tact as reference object. Make sure the current filter has \n\tbeen calibrated with the sliders for a clear white-on-black image." << endl;
-				cout << "You are about to change the coordinate scale, continue? (y/n): ";
-				cin >> choice;
-				if(choice == "y" || choice == "Y")
+				if(cData.two_clicks)
 				{
+					putText(cameraFrame, "(The terminal requires your input)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+					putText(cameraFrame, "(The terminal requires your input)" , Point(30, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+					imshow("cam", cameraFrame);
+					waitKey(20);
+
+					
 					float real_diameter = 0;
-					cout << "\nWhat is the real diameter of the **currently masked** object?:";
+					int point_dist = sqrt(pow((cData.x[0] - cData.x[1]),2) + pow((cData.y[0] - cData.y[1]),2));
+					
+					cout << "\nWhat is the real distance from the blue and red dots?";
 					cin >> real_diameter;
-					scale = real_diameter/(selected_object->radius*2);
+					scale = real_diameter/(point_dist);
 					changeScale(objects, scale);
-					cout << "\nThe new scale is has been set! Save the new scale to file? (y/n): ";
+					cout << "\nThe new scale is has been set! Save changes to new scale? (y/n): ";
 					string choice2 = "";
 					cin >> choice2;
 					if(choice2 == "y" || choice2 == "Y")
@@ -191,6 +191,12 @@ int main() {
 						saveSettings(objects, true);
 					}
 					cout << "\n";
+
+				}
+				else
+				{
+					cout << "You need to click the start and finish points of the object that will be used as reference" << endl;
+					
 				}
 				
 			}
@@ -267,6 +273,8 @@ void clickPointCallBack(int event, int x, int y, int flags, void* userdata)
 			cd->y[clicked_count] = y;
 			cd->clicked_count++;
 			cd->clicked_count = cd->clicked_count <= 1 ? cd->clicked_count : 0;
+			if(cd->clicked_count == 0) //Atleast two clicks have been made by this point.
+				cd->two_clicks = true;
 		
 		}
 
