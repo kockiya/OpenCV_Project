@@ -172,14 +172,15 @@ int main() {
 				{
 					putText(cameraFrame, "(The terminal requires your input)" , Point(30, 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
 					putText(cameraFrame, "(The terminal requires your input)" , Point(30, 450), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+					drawClickedPoints(cam, cData, cameraFrame);
 					imshow("cam", cameraFrame);
 					waitKey(20);
 
 					
 					float real_diameter = 0;
-					int point_dist = sqrt(pow((cData.x[0] - cData.x[1]),2) + pow((cData.y[0] - cData.y[1]),2));
+					float point_dist = sqrt(pow((cData.x[0] - cData.x[1]),2) + pow((cData.y[0] - cData.y[1]),2));
 					
-					cout << "\nWhat is the real distance from the blue and red dots?";
+					cout << "\nWhat is the real distance from the blue and red dots?: ";
 					cin >> real_diameter;
 					scale = real_diameter/(point_dist);
 					changeScale(objects, scale);
@@ -195,7 +196,7 @@ int main() {
 				}
 				else
 				{
-					cout << "You need to click the start and finish points of the object that will be used as reference" << endl;
+					cout << "ERROR: You need to click the start and finish points of the object that will be used as reference" << endl;
 					
 				}
 				
