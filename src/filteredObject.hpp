@@ -23,6 +23,7 @@ class filteredObject{
 	Mat mask;
 	Moments moment;
 	int x, y, adjusted_y, adjusted_x, ekernel_val, dkernel_val;
+	float x_float, y_float;
 	bool can_track;
 	double area;
 	float radius;
@@ -219,9 +220,14 @@ bool updateFilteredObjectPosition(VideoCapture &cam, vector<filteredObject> &obj
 							{
 								objects[i].x = objects[i].moment.m10/objects[i].area;
 								objects[i].y = objects[i].moment.m01/objects[i].area;
-								objects[i].adjusted_y = objects[i].mask.size().height - objects[i].moment.m01/objects[i].area;
+								objects[i].y_float = objects[i].mask.size().height - objects[i].moment.m01/objects[i].area;
+								objects[i].adjusted_y = objects[i].y_float;
+								
 								objects[i].adjusted_y *= objects[i].scale;
-								objects[i].adjusted_x = objects[i].x * objects[i].scale;
+								objects[i].y_float *= objects[i].scale;
+								
+								objects[i].x_float = objects[i].x * objects[i].scale;;
+								objects[i].adjusted_x = objects[i].x_float;
 								objects[i].can_track = true;
 							}
 							else
@@ -275,8 +281,8 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 	
 			//Text
 			putText(cameraFrame, objects[i].name, Point(objects[i].x+xshift, objects[i].y+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-			putText(cameraFrame, "X: "+to_string(objects[i].adjusted_x) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-			putText(cameraFrame, "Y: "+to_string(objects[i].adjusted_y) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+			putText(cameraFrame, "X: "+to_string(objects[i].x_float) , Point(objects[i].x+xshift, objects[i].y+yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+			putText(cameraFrame, "Y: "+to_string(objects[i].y_float) , Point(objects[i].x+xshift, objects[i].y+2*yshift+r), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
 		}
 							
 	}
