@@ -65,10 +65,20 @@ struct clickData
 		clicked_count = 0;
 		two_clicks = false;
 	}
-	
-
 };
-	
+
+struct clickPoint
+{
+	bool can_draw;
+	int x;
+	int y;
+	clickPoint(int p, int q)
+	{
+		x = p;
+		y = q;
+		can_draw = true;
+	}
+};
 void changeScale(vector<filteredObject> &f, float newScale)
 //Changes the pixel scale to provided scale.
 {
@@ -294,7 +304,7 @@ bool drawFilteredObject(VideoCapture &cam, vector<filteredObject> &objects, Mat 
 
 }
 
-void drawClickedPoints(VideoCapture &cam, clickData &cData, Mat &cameraFrame)
+void drawClickedData(VideoCapture &cam, clickData &cData, Mat &cameraFrame)
 //Given clickData, draws red/blue circles at clicked position cameraFrame given clickData.
 
 {
@@ -311,6 +321,37 @@ void drawClickedPoints(VideoCapture &cam, clickData &cData, Mat &cameraFrame)
 		}
 	}
 
+}
+
+void drawClickedPoint(clickPoint &cPoint, Mat &cameraFrame)
+{
+	if(cPoint.can_draw)
+		circle(cameraFrame, Point(cPoint.x, cPoint.y), 2, Scalar(0, 255, 0), -1);
+}
+
+void click2PointCallBack(int event, int x, int y, int flags, void* userdata)
+{
+//Puts screen coordinates of click information into clickData struct. Limited to
+//storing two coordinates at a time; should alternate between stored points 0 and 1.
+	
+	if(event == EVENT_LBUTTONUP)
+	{
+		clickData* cd = (clickData*)userdata;
+		int clicked_count = cd->clicked_count;
+
+		if(cd->clicked_count <= 1)
+		{
+			cd->x[clicked_count] = x;
+			cd->y[clicked_count] = y;
+			cd->clicked_count++;
+			cd->clicked_count = cd->clicked_count <= 1 ? cd->clicked_count : 0;
+			if(cd->clicked_count == 0) //Atleast two clicks have been made by this point.
+				cd->two_clicks = true;
+		
+		}
+
+	}
+	
 }
 
 //Credits to stackoverflow Evan.Teran for elegant string splitting.
