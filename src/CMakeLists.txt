@@ -45,6 +45,10 @@ add_executable(filterCalibration filterCalibrationROS.cpp)
 target_link_libraries(filterCalibration ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(filterCalibration beginner_tutorials_generate_messages_cpp)
 
+add_executable(clickMove clickmove_subpub.cpp)
+target_link_libraries(clickMove ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(clickMove beginner_tutorials_generate_messages_cpp)
+
 #add_executable(vsrv velocity_server.cpp)
 #target_link_libraries(vsrv ${catkin_LIBRARIES} ${OpenCV_LIBS})
 #add_dependencies(vsrv beginner_tutorials_generate_messages_cpp)
